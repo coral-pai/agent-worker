@@ -70,6 +70,10 @@ export GITHUB_TOKEN=ghp_...
 provider:
   type: linear                        # Ticket provider — "linear" or "github"
   poll_interval_seconds: 60           # How often to check for new tickets
+  only_unassigned: true               # Skip tickets that already have an assignee
+                                      # (default true). Set to false to pick up every
+                                      # ticket in the `ready` status regardless of
+                                      # assignment.
 
   # Linear (type: linear)
   linear:

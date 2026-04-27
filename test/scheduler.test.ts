@@ -24,6 +24,7 @@ function makeConfig(overrides?: Partial<Config>): Config {
     provider: {
       type: "linear",
       poll_interval_seconds: 10,
+      only_unassigned: true,
       linear: { project_id: "proj-1" },
     },
     lifecycle: {

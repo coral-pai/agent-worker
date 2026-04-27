@@ -12,6 +12,7 @@ export function createProvider(
       return createLinearProvider({
         projectId: providerConfig.linear.project_id,
         readyLabel: lifecycle.ready,
+        onlyUnassigned: providerConfig.only_unassigned,
       });
     case "github":
       return createGitHubProvider({
@@ -20,6 +21,7 @@ export function createProvider(
         projectNumber: providerConfig.github.project_number,
         statusFieldName: providerConfig.github.status_field_name,
         readyLabel: lifecycle.ready,
+        onlyUnassigned: providerConfig.only_unassigned,
       });
     default: {
       const _exhaustive: never = providerConfig;

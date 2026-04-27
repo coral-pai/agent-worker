@@ -5,7 +5,7 @@ import type { Config } from "../../src/config.ts";
 const lifecycle: Config["lifecycle"] = {
   ready: "Todo",
   in_progress: "In Progress",
-  done: "Done",
+  in_review: "In Review",
   failed: "Canceled",
 };
 
@@ -29,7 +29,7 @@ afterEach(() => {
 describe("createProvider", () => {
   test("returns ProviderBundle for linear type", () => {
     const bundle = createProvider(
-      { type: "linear", poll_interval_seconds: 60, linear: { project_id: "proj-1" } },
+      { type: "linear", poll_interval_seconds: 60, only_unassigned: true, linear: { project_id: "proj-1" } },
       lifecycle,
     );
 
@@ -44,7 +44,7 @@ describe("createProvider", () => {
     delete process.env.LINEAR_API_KEY;
     expect(() =>
       createProvider(
-        { type: "linear", poll_interval_seconds: 60, linear: { project_id: "proj-1" } },
+        { type: "linear", poll_interval_seconds: 60, only_unassigned: true, linear: { project_id: "proj-1" } },
         lifecycle,
       ),
     ).toThrow("LINEAR_API_KEY environment variable is required");
@@ -55,6 +55,7 @@ describe("createProvider", () => {
       {
         type: "github",
         poll_interval_seconds: 60,
+        only_unassigned: true,
         github: {
           owner: "acme",
           owner_type: "organization",
@@ -76,6 +77,7 @@ describe("createProvider", () => {
         {
           type: "github",
           poll_interval_seconds: 60,
+          only_unassigned: true,
           github: {
             owner: "acme",
             owner_type: "organization",

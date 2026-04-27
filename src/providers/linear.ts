@@ -9,6 +9,7 @@ const isLinearRateLimit: IsRetryable = (err) =>
 export function createLinearProvider(options: {
   projectId: string;
   readyLabel: string;
+  onlyUnassigned: boolean;
 }): ProviderBundle {
   const apiKey = process.env.LINEAR_API_KEY;
   if (!apiKey) {
@@ -38,6 +39,7 @@ export function createLinearProvider(options: {
               filter: {
                 project: { id: { eq: options.projectId } },
                 state: { name: { eq: options.readyLabel } },
+                ...(options.onlyUnassigned ? { assignee: { null: true } } : {}),
               },
             }),
           isLinearRateLimit,

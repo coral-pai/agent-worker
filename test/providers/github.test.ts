@@ -19,6 +19,7 @@ const baseOptions = {
   projectNumber: 1,
   statusFieldName: "Status",
   readyLabel: "Todo",
+  onlyUnassigned: true,
 };
 
 describe("createGitHubProvider", () => {

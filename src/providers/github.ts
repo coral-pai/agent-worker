@@ -41,6 +41,7 @@ export function createGitHubProvider(options: {
   projectNumber: number;
   statusFieldName: string;
   readyLabel: string;
+  onlyUnassigned: boolean;
 }): ProviderBundle {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
@@ -112,6 +113,7 @@ export function createGitHubProvider(options: {
           number: number;
           title: string;
           body: string | null;
+          assignees: { totalCount: number };
           repository: { nameWithOwner: string };
         }
       | { __typename: "PullRequest" | "DraftIssue" }
@@ -149,6 +151,7 @@ export function createGitHubProvider(options: {
                         number
                         title
                         body
+                        assignees(first: 1) { totalCount }
                         repository { nameWithOwner }
                       }
                     }
@@ -175,6 +178,7 @@ export function createGitHubProvider(options: {
           for (const node of data.node.items.nodes) {
             if (node.fieldValueByName?.optionId !== targetOptionId) continue;
             if (!node.content || node.content.__typename !== "Issue") continue;
+            if (options.onlyUnassigned && node.content.assignees.totalCount > 0) continue;
             tickets.push({
               id: encodeId(node.id, node.content.id),
               identifier: `${node.content.repository.nameWithOwner}#${node.content.number}`,

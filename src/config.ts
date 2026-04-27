@@ -12,6 +12,7 @@ const LifecycleSchema = z.object({
 const LinearProviderSchema = z.object({
   type: z.literal("linear"),
   poll_interval_seconds: z.number().positive().default(60),
+  only_unassigned: z.boolean().default(true),
   linear: z.object({
     project_id: z.string(),
   }),
@@ -20,6 +21,7 @@ const LinearProviderSchema = z.object({
 const GitHubProviderSchema = z.object({
   type: z.literal("github"),
   poll_interval_seconds: z.number().positive().default(60),
+  only_unassigned: z.boolean().default(true),
   github: z.object({
     owner: z.string(),
     owner_type: z.enum(["organization", "user"]).default("organization"),

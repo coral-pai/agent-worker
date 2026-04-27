@@ -9,6 +9,11 @@ provider:
   # provider를 폴링하는 주기(초). 기본값: 60
   poll_interval_seconds: 60
 
+  # assignee가 지정되지 않은 티켓만 픽업할지 여부. 기본값: true
+  # true: 사람이 본인을 assignee 로 잡아둔 티켓은 agent 가 건너뜀 → 사람/agent 작업 분리
+  # false: ready 상태인 모든 티켓을 픽업 (기존 동작)
+  only_unassigned: true
+
   # provider별 연결 설정 — 위의 `type`에 해당하는 블록만 채우면 됩니다.
 
   # --- Linear (type: linear) ---
