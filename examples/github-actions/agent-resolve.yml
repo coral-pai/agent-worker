@@ -37,7 +37,20 @@ jobs:
       issues: write         # 코멘트
       id-token: write       # claude-code-action OIDC 인증 (필수)
       actions: read         # claude-code-action CI 결과 읽기 (선택)
+      statuses: write       # PR 페이지 내 commit status 표시
     steps:
+      # PR 페이지 하단에 "agent-worker/resolve — pending" 표시. 클릭하면 Action run 으로 이동.
+      - name: Mark check pending
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_SHA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} --jq .head.sha)
+          gh api repos/${{ github.repository }}/statuses/$PR_SHA -X POST \
+            -f state=pending \
+            -f context="agent-worker/resolve" \
+            -f description="충돌 해결 작업 진행 중..." \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
@@ -80,3 +93,28 @@ jobs:
 
             Do NOT merge the PR. Merging is the human reviewer's responsibility after
             they review your resolution commit.
+
+            Always write any PR comments and the commit message in Korean (한국어).
+            Code, identifiers, file paths, and shell commands stay in their original
+            form — do not translate those.
+
+      # 위 step 의 success/failure 와 무관하게 항상 마지막 status 를 갱신.
+      # Claude 가 새 commit 을 push 했다면 그 새 HEAD 에 status 가 붙습니다.
+      - name: Mark check final
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_SHA=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.issue.number }} --jq .head.sha)
+          if [[ "${{ job.status }}" == "success" ]]; then
+            STATE="success"
+            DESC="충돌 해결 완료"
+          else
+            STATE="failure"
+            DESC="실패 — Actions 탭의 로그를 확인하세요"
+          fi
+          gh api repos/${{ github.repository }}/statuses/$PR_SHA -X POST \
+            -f state=$STATE \
+            -f context="agent-worker/resolve" \
+            -f description="$DESC" \
+            -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
