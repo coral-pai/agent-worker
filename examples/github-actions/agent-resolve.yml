@@ -26,9 +26,11 @@ on:
 
 jobs:
   resolve:
-    # PR 코멘트에 한해서만 (issue 코멘트 제외) 트리거 어구가 있을 때 실행
+    # PR 코멘트에 한해서만 (issue 코멘트 제외) 트리거 어구가 있을 때 실행.
+    # 봇 코멘트는 제외 — Claude 가 답변에 트리거 phrase 를 포함하면 무한 루프가 생김.
     if: |
       github.event.issue.pull_request != null &&
+      github.event.comment.user.type != 'Bot' &&
       contains(github.event.comment.body, '/agent-worker resolve')
     runs-on: ubuntu-latest
     permissions:
