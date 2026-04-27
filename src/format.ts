@@ -14,22 +14,22 @@ export const colors = {
 
 export const isTTY = process.stdout.isTTY === true;
 
-export function printSplash(version: string, subtitle: string): void {
+export function printSplash(
+  version: string,
+  info: { provider: string; executor: string; repoPath: string },
+): void {
   if (!isTTY) return;
 
-  const title = `Agent Worker  v${version}`;
-  const width = Math.max(title.length, subtitle.length) + 4;
-
-  const top = `  ╔${"═".repeat(width)}╗`;
-  const bot = `  ╚${"═".repeat(width)}╝`;
-  const pad = (text: string, visibleLen: number) =>
-    `  ║  ${text}${" ".repeat(width - visibleLen - 2)}║`;
+  const bar = colors.cyan("│");
+  const title = `${esc("1")}Agent Worker v${version}${esc("22")}`;
 
   console.log("");
-  console.log(colors.cyan(top));
-  console.log(colors.cyan(pad(`${esc("1")}${title}${esc("22")}`, title.length)));
-  console.log(colors.cyan(pad(subtitle, subtitle.length)));
-  console.log(colors.cyan(bot));
+  console.log(`  ${colors.cyan("╭─")} ${title}`);
+  console.log(`  ${bar}`);
+  console.log(`  ${bar}  ${colors.dim("Provider")}  ${info.provider}`);
+  console.log(`  ${bar}  ${colors.dim("Executor")}  ${info.executor}`);
+  console.log(`  ${bar}  ${colors.dim("저장소  ")}  ${info.repoPath}`);
+  console.log(`  ${colors.cyan("╰─")}`);
   console.log("");
 }
 

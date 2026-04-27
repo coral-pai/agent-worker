@@ -57,7 +57,11 @@ function main() {
     },
   });
 
-  printSplash(version, `${bundle.provider.name} → ${config.executor.type} pipeline`);
+  printSplash(version, {
+    provider: bundle.provider.name,
+    executor: config.executor.type,
+    repoPath: config.repo.path,
+  });
 
   logger.info("Agent Worker started", {
     provider: bundle.provider.name,
