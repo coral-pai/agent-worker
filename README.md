@@ -141,6 +141,27 @@ agent-worker is provider-agnostic — the polling/claim/comment loop is the same
 
 Adding a new provider means writing one file in `src/providers/`, adding a case to the factory in `src/providers/factory.ts`, and adding a Zod schema branch in `src/config.ts` — see `src/providers/types.ts` for the `TicketProvider` interface.
 
+## PR conflict resolution (optional)
+
+When multiple agents run in parallel, the PRs they produce can conflict with each other once one merges. `examples/github-actions/agent-resolve.yml` is a GitHub Actions workflow template that lets a reviewer ask Claude to resolve conflicts directly from the PR.
+
+**Setup (in the target repo, e.g. the repo where agent-worker pushes PRs):**
+
+1. Copy `examples/github-actions/agent-resolve.yml` to `.github/workflows/agent-resolve.yml` in the target repo.
+2. Add `ANTHROPIC_API_KEY` (or `CLAUDE_CODE_OAUTH_TOKEN`) as a repo secret: Settings → Secrets and variables → Actions → New repository secret.
+
+**Usage:**
+
+On a PR with conflicts, post a comment containing `@agent-worker resolve`. Optionally append guidance — for example:
+
+```
+@agent-worker resolve — main 쪽의 시그니처 변경을 우선하고, 내 변경은 그쪽에 맞춰 리네임해줘
+```
+
+The action checks out the PR branch, attempts to merge with the base branch, resolves conflicts (using the comment as guidance), pushes a resolution commit, and replies with a summary. **Merging the PR is still the human reviewer's job** — the action only resolves conflicts, it does not merge.
+
+Authorization: the underlying [`anthropics/claude-code-action`](https://github.com/anthropics/claude-code-action) requires the comment author to have write access to the repo, so external contributors cannot trigger it.
+
 ## How it works
 
 1. **Poll** — Watch the provider for tickets in the `ready` status on a configurable interval.
