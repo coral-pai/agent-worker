@@ -1,17 +1,10 @@
 import { LinearClient } from "@linear/sdk";
-import type { Ticket, TicketProvider } from "./types.ts";
+import type { ProviderBundle } from "./types.ts";
 
 const INITIAL_DELAY_MS = 1000;
 const JITTER_MS = 500;
 const MAX_DELAY_MS = 60000;
 const MAX_BACKOFF_RETRIES = 5;
-
-type StatusMap = {
-  ready: string;
-  in_progress: string;
-  done: string;
-  failed: string;
-};
 
 async function withBackoff<T>(
   fn: () => Promise<T>,
@@ -37,11 +30,15 @@ async function withBackoff<T>(
 }
 
 export function createLinearProvider(options: {
-  apiKey: string;
   projectId: string;
-  statuses: StatusMap;
-}): TicketProvider {
-  const client = new LinearClient({ apiKey: options.apiKey });
+  readyLabel: string;
+}): ProviderBundle {
+  const apiKey = process.env.LINEAR_API_KEY;
+  if (!apiKey) {
+    throw new Error("LINEAR_API_KEY environment variable is required");
+  }
+
+  const client = new LinearClient({ apiKey });
   const stateCache = new Map<string, { id: string; name: string }[]>();
 
   async function getTeamStates(teamId: string): Promise<{ id: string; name: string }[]> {
@@ -54,40 +51,45 @@ export function createLinearProvider(options: {
   }
 
   return {
-    async fetchReadyTickets(): Promise<Ticket[]> {
-      const issues = await withBackoff(() =>
-        client.issues({
-          filter: {
-            project: { id: { eq: options.projectId } },
-            state: { name: { eq: options.statuses.ready } },
-          },
-        })
-      );
+    provider: {
+      name: "Linear",
 
-      return issues.nodes.map((issue) => ({
-        id: issue.id,
-        identifier: issue.identifier,
-        title: issue.title,
-        description: issue.description ?? undefined,
-      }));
+      async fetchReadyTickets() {
+        const issues = await withBackoff(() =>
+          client.issues({
+            filter: {
+              project: { id: { eq: options.projectId } },
+              state: { name: { eq: options.readyLabel } },
+            },
+          })
+        );
+
+        return issues.nodes.map((issue) => ({
+          id: issue.id,
+          identifier: issue.identifier,
+          title: issue.title,
+          description: issue.description ?? undefined,
+        }));
+      },
+
+      async transitionStatus(ticketId: string, statusName: string) {
+        const issue = await withBackoff(() => client.issue(ticketId));
+        const team = await issue.team;
+        if (!team) throw new Error(`No team found for issue ${ticketId}`);
+
+        const states = await getTeamStates(team.id);
+        const target = states.find((s) => s.name === statusName);
+        if (!target) throw new Error(`Status "${statusName}" not found on team`);
+
+        await withBackoff(() => client.updateIssue(ticketId, { stateId: target.id }));
+      },
+
+      async postComment(ticketId: string, body: string) {
+        await withBackoff(() =>
+          client.createComment({ issueId: ticketId, body })
+        );
+      },
     },
-
-    async transitionStatus(ticketId: string, statusName: string): Promise<void> {
-      const issue = await withBackoff(() => client.issue(ticketId));
-      const team = await issue.team;
-      if (!team) throw new Error(`No team found for issue ${ticketId}`);
-
-      const states = await getTeamStates(team.id);
-      const target = states.find((s) => s.name === statusName);
-      if (!target) throw new Error(`Status "${statusName}" not found on team`);
-
-      await withBackoff(() => client.updateIssue(ticketId, { stateId: target.id }));
-    },
-
-    async postComment(ticketId: string, body: string): Promise<void> {
-      await withBackoff(() =>
-        client.createComment({ issueId: ticketId, body })
-      );
-    },
+    secrets: [apiKey],
   };
 }

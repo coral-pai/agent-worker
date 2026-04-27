@@ -1,7 +1,7 @@
 import { loadConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { printSplash } from "./format.ts";
-import { createLinearProvider } from "./providers/linear.ts";
+import { createProvider } from "./providers/factory.ts";
 import { createPoller } from "./poller.ts";
 import { processTicket } from "./scheduler.ts";
 import { version } from "../package.json";
@@ -31,34 +31,37 @@ function main() {
     process.exit(1);
   }
 
-  printSplash(version);
+  let bundle;
+  try {
+    bundle = createProvider(config.provider, config.lifecycle);
+  } catch (err) {
+    console.error(
+      "Provider error:",
+      err instanceof Error ? err.message : err
+    );
+    process.exit(1);
+  }
 
   const logger = createLogger({
     level: config.log.level,
     filePath: config.log.file,
-    redact: [config.apiKey],
-  });
-
-  const provider = createLinearProvider({
-    apiKey: config.apiKey,
-    projectId: config.linear.project_id,
-    statuses: config.linear.statuses,
+    redact: bundle.secrets,
   });
 
   const poller = createPoller({
-    provider,
-    intervalMs: config.linear.poll_interval_seconds * 1000,
+    provider: bundle.provider,
+    intervalMs: config.provider.poll_interval_seconds * 1000,
     logger,
     onTicket: async (ticket) => {
-      await processTicket({ ticket, provider, config, logger });
+      await processTicket({ ticket, provider: bundle.provider, config, logger });
     },
   });
 
-  printSplash(config.executor.type);
+  printSplash(version, `${bundle.provider.name} → ${config.executor.type} pipeline`);
 
   logger.info("Agent Worker started", {
-    projectId: config.linear.project_id,
-    pollInterval: config.linear.poll_interval_seconds,
+    provider: bundle.provider.name,
+    pollInterval: config.provider.poll_interval_seconds,
     executor: config.executor.type,
   });
 

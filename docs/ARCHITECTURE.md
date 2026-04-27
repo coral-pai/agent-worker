@@ -230,17 +230,20 @@ agent-worker --config ./agent-worker.yaml
 **Schema** (validated with Zod at startup per NFR-05):
 
 ```yaml
-linear:
-  project_id: "PROJECT_UUID"        # required
-  poll_interval_seconds: 60          # optional, default 60
-  statuses:
-    ready: "Todo"                    # required — status name to poll for
-    in_progress: "In Progress"       # required — status to set on pickup
-    done: "Done"                     # required — status to set on success
-    failed: "Canceled"               # required — status to set on failure
+provider:
+  type: linear                        # required — discriminator (currently only "linear")
+  poll_interval_seconds: 60           # optional, default 60
+  linear:
+    project_id: "PROJECT_UUID"        # required (for linear)
+
+lifecycle:
+  ready: "Todo"                       # required — status name to poll for
+  in_progress: "In Progress"          # required — status to set on pickup
+  done: "Done"                        # required — status to set on success
+  failed: "Canceled"                  # required — status to set on failure
 
 repo:
-  path: "/absolute/path/to/repo"    # required
+  path: "/absolute/path/to/repo"     # required
 
 hooks:
   pre:                               # optional, default []

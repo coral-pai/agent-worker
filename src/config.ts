@@ -2,18 +2,24 @@ import { readFileSync } from "fs";
 import { parse as parseYaml } from "yaml";
 import { z } from "zod/v4";
 
-const StatusesSchema = z.object({
+const LifecycleSchema = z.object({
   ready: z.string(),
   in_progress: z.string(),
   done: z.string(),
   failed: z.string(),
 });
 
-const LinearSchema = z.object({
-  project_id: z.string(),
+const LinearProviderSchema = z.object({
+  type: z.literal("linear"),
   poll_interval_seconds: z.number().positive().default(60),
-  statuses: StatusesSchema,
+  linear: z.object({
+    project_id: z.string(),
+  }),
 });
+
+const ProviderSchema = z.discriminatedUnion("type", [
+  LinearProviderSchema,
+]);
 
 const RepoSchema = z.object({
   path: z.string(),
@@ -36,27 +42,27 @@ const LogSchema = z.object({
 }).default({ level: "info" });
 
 const ConfigFileSchema = z.object({
-  linear: LinearSchema,
+  provider: ProviderSchema,
+  lifecycle: LifecycleSchema,
   repo: RepoSchema,
   hooks: HooksSchema,
   executor: ExecutorSchema,
   log: LogSchema,
 });
 
-type ConfigFile = z.infer<typeof ConfigFileSchema>;
-
-export type Config = ConfigFile & {
-  apiKey: string;
-};
+export type Config = z.infer<typeof ConfigFileSchema>;
 
 export function loadConfig(filePath: string): Config {
-  const apiKey = process.env.LINEAR_API_KEY;
-  if (!apiKey) {
-    throw new Error("LINEAR_API_KEY environment variable is required");
-  }
-
   const text = readFileSync(filePath, "utf-8");
   const raw = parseYaml(text) as Record<string, unknown>;
+
+  if (raw.linear && !raw.provider) {
+    throw new Error(
+      "Config schema changed: top-level `linear:` is now `provider: { type: linear, " +
+      "poll_interval_seconds, linear: { project_id } }` plus a sibling `lifecycle:` block. " +
+      "See README for the new shape."
+    );
+  }
 
   // Backward compat: map `claude` key to `executor` with type "claude"
   if (raw.claude && !raw.executor) {
@@ -64,7 +70,5 @@ export function loadConfig(filePath: string): Config {
     delete raw.claude;
   }
 
-  const parsed = ConfigFileSchema.parse(raw);
-
-  return { ...parsed, apiKey };
+  return ConfigFileSchema.parse(raw);
 }

@@ -40,14 +40,17 @@ The `codex` binary is a runtime dependency — it is not bundled with agent-work
 Set `executor.type` to `codex` in your config file:
 
 ```yaml
-linear:
-  project_id: "your-project-uuid"
+provider:
+  type: linear
   poll_interval_seconds: 60
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+  linear:
+    project_id: "your-project-uuid"
+
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 
 repo:
   path: "/path/to/your/repo"

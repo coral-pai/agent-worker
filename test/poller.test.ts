@@ -23,6 +23,7 @@ describe("createPoller", () => {
     let callCount = 0;
 
     const provider: TicketProvider = {
+      name: "Linear",
       fetchReadyTickets: async () => {
         callCount++;
         if (callCount <= 1) return [testTicket];
@@ -51,6 +52,7 @@ describe("createPoller", () => {
     let pollCount = 0;
 
     const provider: TicketProvider = {
+      name: "Linear",
       fetchReadyTickets: async () => {
         pollCount++;
         if (pollCount >= 3) poller.stop();
@@ -75,6 +77,7 @@ describe("createPoller", () => {
     let callCount = 0;
 
     const provider: TicketProvider = {
+      name: "Linear",
       fetchReadyTickets: async () => {
         callCount++;
         if (callCount === 1) throw new Error("Network error");
@@ -107,6 +110,7 @@ describe("createPoller", () => {
     let pollCount = 0;
 
     const provider: TicketProvider = {
+      name: "Linear",
       fetchReadyTickets: async () => {
         pollCount++;
         if (pollCount >= 2) poller.stop();
@@ -134,6 +138,7 @@ describe("createPoller", () => {
     let pollCount = 0;
 
     const provider: TicketProvider = {
+      name: "Linear",
       fetchReadyTickets: async () => {
         pollCount++;
         return [];

@@ -21,16 +21,16 @@ const ticket: Ticket = {
 
 function makeConfig(overrides?: Partial<Config>): Config {
   return {
-    apiKey: "test-key",
-    linear: {
-      project_id: "proj-1",
+    provider: {
+      type: "linear",
       poll_interval_seconds: 10,
-      statuses: {
-        ready: "Todo",
-        in_progress: "In Progress",
-        done: "Done",
-        failed: "Canceled",
-      },
+      linear: { project_id: "proj-1" },
+    },
+    lifecycle: {
+      ready: "Todo",
+      in_progress: "In Progress",
+      done: "Done",
+      failed: "Canceled",
     },
     repo: { path: "/tmp" },
     hooks: { pre: [], post: [] },
@@ -51,6 +51,7 @@ function makeProvider(overrides?: Partial<TicketProvider>): {
     transitions,
     comments,
     provider: {
+      name: "Linear",
       fetchReadyTickets: async () => [],
       transitionStatus: async (_id, status) => {
         transitions.push(status);

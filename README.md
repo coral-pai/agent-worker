@@ -63,15 +63,17 @@ export LINEAR_API_KEY=lin_api_...
 ### Configuration reference
 
 ```yaml
-linear:
-  project_id: "your-project-uuid"     # Linear project UUID (required)
+provider:
+  type: linear                        # Ticket provider — currently "linear"
   poll_interval_seconds: 60           # How often to check for new tickets
+  linear:
+    project_id: "your-project-uuid"   # Linear project UUID (required)
 
-  statuses:
-    ready: "Todo"                     # Status that marks a ticket ready for pickup
-    in_progress: "In Progress"        # Status set when the agent claims a ticket
-    done: "Done"                      # Status set on success
-    failed: "Canceled"                # Status set on failure
+lifecycle:
+  ready: "Todo"                       # Status that marks a ticket ready for pickup
+  in_progress: "In Progress"          # Status set when the agent claims a ticket
+  done: "Done"                        # Status set on success
+  failed: "Canceled"                  # Status set on failure
 
 repo:
   path: "/path/to/your/repo"          # Absolute path to the working repository
@@ -218,14 +220,17 @@ If `timeout_seconds` is exceeded the process is killed and the ticket is marked 
 ### Full example config
 
 ```yaml
-linear:
-  project_id: "your-project-uuid"
+provider:
+  type: linear
   poll_interval_seconds: 60
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+  linear:
+    project_id: "your-project-uuid"
+
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 
 repo:
   path: "/path/to/your/repo"

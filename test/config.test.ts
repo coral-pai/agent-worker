@@ -14,23 +14,23 @@ function writeConfig(content: string): string {
 
 beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), "agent-worker-test-"));
-  process.env.LINEAR_API_KEY = "test-api-key-123";
 });
 
 afterEach(() => {
   rmSync(tmpDir, { recursive: true });
-  delete process.env.LINEAR_API_KEY;
 });
 
 describe("loadConfig", () => {
   const validYaml = `
-linear:
-  project_id: "proj-123"
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+provider:
+  type: linear
+  linear:
+    project_id: "proj-123"
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 repo:
   path: "/tmp/repo"
 `;
@@ -38,9 +38,12 @@ repo:
   test("parses valid config with defaults", () => {
     const config = loadConfig(writeConfig(validYaml));
 
-    expect(config.linear.project_id).toBe("proj-123");
-    expect(config.linear.poll_interval_seconds).toBe(60);
-    expect(config.linear.statuses.ready).toBe("Todo");
+    expect(config.provider.type).toBe("linear");
+    if (config.provider.type === "linear") {
+      expect(config.provider.linear.project_id).toBe("proj-123");
+      expect(config.provider.poll_interval_seconds).toBe(60);
+    }
+    expect(config.lifecycle.ready).toBe("Todo");
     expect(config.repo.path).toBe("/tmp/repo");
     expect(config.hooks.pre).toEqual([]);
     expect(config.hooks.post).toEqual([]);
@@ -48,19 +51,20 @@ repo:
     expect(config.executor.timeout_seconds).toBe(300);
     expect(config.executor.retries).toBe(0);
     expect(config.log.level).toBe("info");
-    expect(config.apiKey).toBe("test-api-key-123");
   });
 
   test("parses config with executor fields set", () => {
     const fullYaml = `
-linear:
-  project_id: "proj-456"
+provider:
+  type: linear
   poll_interval_seconds: 30
-  statuses:
-    ready: "Ready"
-    in_progress: "Working"
-    done: "Complete"
-    failed: "Failed"
+  linear:
+    project_id: "proj-456"
+lifecycle:
+  ready: "Ready"
+  in_progress: "Working"
+  done: "Complete"
+  failed: "Failed"
 repo:
   path: "/home/user/project"
 hooks:
@@ -78,7 +82,9 @@ log:
 `;
     const config = loadConfig(writeConfig(fullYaml));
 
-    expect(config.linear.poll_interval_seconds).toBe(30);
+    if (config.provider.type === "linear") {
+      expect(config.provider.poll_interval_seconds).toBe(30);
+    }
     expect(config.hooks.pre).toEqual(["git pull", "git checkout -b feature"]);
     expect(config.hooks.post).toEqual(["npm test"]);
     expect(config.executor.type).toBe("claude");
@@ -89,13 +95,15 @@ log:
 
   test("parses config with codex executor", () => {
     const yaml = `
-linear:
-  project_id: "proj-123"
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+provider:
+  type: linear
+  linear:
+    project_id: "proj-123"
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 repo:
   path: "/tmp/repo"
 executor:
@@ -109,13 +117,15 @@ executor:
 
   test("backward compat: maps claude key to executor", () => {
     const yaml = `
-linear:
-  project_id: "proj-123"
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+provider:
+  type: linear
+  linear:
+    project_id: "proj-123"
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 repo:
   path: "/tmp/repo"
 claude:
@@ -128,9 +138,10 @@ claude:
     expect(config.executor.retries).toBe(2);
   });
 
-  test("throws on missing project_id", () => {
+  test("throws helpful error when legacy `linear:` top-level key is used", () => {
     const yaml = `
 linear:
+  project_id: "proj-123"
   statuses:
     ready: "Todo"
     in_progress: "In Progress"
@@ -139,13 +150,33 @@ linear:
 repo:
   path: "/tmp/repo"
 `;
+    expect(() => loadConfig(writeConfig(yaml))).toThrow(
+      /Config schema changed/
+    );
+  });
+
+  test("throws on missing project_id", () => {
+    const yaml = `
+provider:
+  type: linear
+  linear: {}
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
+repo:
+  path: "/tmp/repo"
+`;
     expect(() => loadConfig(writeConfig(yaml))).toThrow();
   });
 
-  test("throws on missing statuses", () => {
+  test("throws on missing lifecycle", () => {
     const yaml = `
-linear:
-  project_id: "proj-123"
+provider:
+  type: linear
+  linear:
+    project_id: "proj-123"
 repo:
   path: "/tmp/repo"
 `;
@@ -154,33 +185,47 @@ repo:
 
   test("throws on missing repo path", () => {
     const yaml = `
-linear:
-  project_id: "proj-123"
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+provider:
+  type: linear
+  linear:
+    project_id: "proj-123"
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 `;
     expect(() => loadConfig(writeConfig(yaml))).toThrow();
   });
 
-  test("throws when LINEAR_API_KEY is not set", () => {
-    delete process.env.LINEAR_API_KEY;
-    expect(() => loadConfig(writeConfig(validYaml))).toThrow(
-      "LINEAR_API_KEY environment variable is required"
-    );
+  test("rejects unknown provider type", () => {
+    const yaml = `
+provider:
+  type: github
+  github:
+    repo: "owner/repo"
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
+repo:
+  path: "/tmp/repo"
+`;
+    expect(() => loadConfig(writeConfig(yaml))).toThrow();
   });
 
   test("rejects retries greater than 3", () => {
     const yaml = `
-linear:
-  project_id: "proj-123"
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+provider:
+  type: linear
+  linear:
+    project_id: "proj-123"
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 repo:
   path: "/tmp/repo"
 executor:
@@ -191,14 +236,16 @@ executor:
 
   test("rejects negative poll interval", () => {
     const yaml = `
-linear:
-  project_id: "proj-123"
+provider:
+  type: linear
   poll_interval_seconds: -1
-  statuses:
-    ready: "Todo"
-    in_progress: "In Progress"
-    done: "Done"
-    failed: "Canceled"
+  linear:
+    project_id: "proj-123"
+lifecycle:
+  ready: "Todo"
+  in_progress: "In Progress"
+  done: "Done"
+  failed: "Canceled"
 repo:
   path: "/tmp/repo"
 `;

@@ -67,6 +67,7 @@ async function removeWorktree(
 
 export async function executePipeline(options: {
   ticket: Ticket;
+  providerName: string;
   preHooks: string[];
   postHooks: string[];
   repoCwd: string;
@@ -74,7 +75,7 @@ export async function executePipeline(options: {
   timeoutMs: number;
   logger: Logger;
 }): Promise<PipelineResult> {
-  const { ticket, preHooks, postHooks, repoCwd, executor, timeoutMs, logger } = options;
+  const { ticket, providerName, preHooks, postHooks, repoCwd, executor, timeoutMs, logger } = options;
   const vars = buildTaskVars(ticket);
 
   const useWorktree = executor.needsWorktree;
@@ -112,7 +113,7 @@ export async function executePipeline(options: {
     }
 
     // Code executor
-    const prompt = `Linear ticket: ${ticket.title}\n\n${ticket.description || "No description provided."}`;
+    const prompt = `${providerName} ticket: ${ticket.title}\n\n${ticket.description || "No description provided."}`;
     const execResult = await executor.run(prompt, effectiveCwd, timeoutMs, logger);
     if (!execResult.success) {
       const reason = execResult.timedOut

@@ -14,11 +14,10 @@ export const colors = {
 
 export const isTTY = process.stdout.isTTY === true;
 
-export function printSplash(version: string): void {
+export function printSplash(version: string, subtitle: string): void {
   if (!isTTY) return;
 
   const title = `Agent Worker  v${version}`;
-  const subtitle = "Linear → Claude Code pipeline";
   const width = Math.max(title.length, subtitle.length) + 4;
 
   const top = `  ╔${"═".repeat(width)}╗`;

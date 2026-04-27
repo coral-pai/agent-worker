@@ -73,6 +73,7 @@ describe("executePipeline", () => {
   test("fails on pre-hook failure before reaching executor", async () => {
     const result = await executePipeline({
       ticket,
+      providerName: "Linear",
       preHooks: ["exit 1"],
       postHooks: [],
       repoCwd: repoDir,
@@ -87,6 +88,7 @@ describe("executePipeline", () => {
   test("returns error details from failed pre-hook", async () => {
     const result = await executePipeline({
       ticket,
+      providerName: "Linear",
       preHooks: ["echo 'setup ok'", "sh -c 'echo bad >&2; exit 2'"],
       postHooks: [],
       repoCwd: repoDir,
@@ -102,6 +104,7 @@ describe("executePipeline", () => {
   test("succeeds when all hooks pass and executor succeeds", async () => {
     const result = await executePipeline({
       ticket,
+      providerName: "Linear",
       preHooks: ["echo pre"],
       postHooks: ["echo post"],
       repoCwd: repoDir,
@@ -116,6 +119,7 @@ describe("executePipeline", () => {
   test("fails at executor stage when executor fails", async () => {
     const result = await executePipeline({
       ticket,
+      providerName: "Linear",
       preHooks: [],
       postHooks: [],
       repoCwd: repoDir,
@@ -130,6 +134,7 @@ describe("executePipeline", () => {
   test("does not run post-hooks when executor fails", async () => {
     const result = await executePipeline({
       ticket,
+      providerName: "Linear",
       preHooks: [],
       postHooks: ["echo post"],
       repoCwd: repoDir,
@@ -144,6 +149,7 @@ describe("executePipeline", () => {
   test("cleans up worktree after success", async () => {
     await executePipeline({
       ticket,
+      providerName: "Linear",
       preHooks: [],
       postHooks: [],
       repoCwd: repoDir,
@@ -160,6 +166,7 @@ describe("executePipeline", () => {
   test("cleans up worktree after failure", async () => {
     await executePipeline({
       ticket,
+      providerName: "Linear",
       preHooks: ["exit 1"],
       postHooks: [],
       repoCwd: repoDir,
