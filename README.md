@@ -31,7 +31,7 @@ Adding a new harness is a single file implementing the executor interface.
 
 - [Bun](https://bun.sh) 1.0+
 - An agent harness installed and authenticated (Claude Code or Codex)
-- A Linear account with a personal API key
+- A ticket provider account with an API token (Linear or GitHub Projects v2)
 
 ## Installation
 
@@ -54,20 +54,33 @@ Copy the example config and edit it:
 cp agent-worker.example.yaml agent-worker.yaml
 ```
 
-Set your Linear API key as an environment variable:
+Set the API token for your provider as an environment variable:
 
 ```bash
+# Linear
 export LINEAR_API_KEY=lin_api_...
+
+# GitHub Projects (token needs `project` scope; also `repo` for private repos)
+export GITHUB_TOKEN=ghp_...
 ```
 
 ### Configuration reference
 
 ```yaml
 provider:
-  type: linear                        # Ticket provider — currently "linear"
+  type: linear                        # Ticket provider — "linear" or "github"
   poll_interval_seconds: 60           # How often to check for new tickets
+
+  # Linear (type: linear)
   linear:
     project_id: "your-project-uuid"   # Linear project UUID (required)
+
+  # GitHub Projects v2 (type: github)
+  # github:
+  #   owner: "your-org-or-user"       # required
+  #   owner_type: organization        # "organization" (default) or "user"
+  #   project_number: 1               # required — project number from the URL
+  #   status_field_name: "Status"     # default "Status"
 
 lifecycle:
   ready: "Todo"                       # Status that marks a ticket ready for pickup
@@ -103,7 +116,7 @@ Hook commands support variable interpolation:
 
 | Variable | Value |
 |---|---|
-| `{id}` | Linear ticket identifier (e.g. `ENG-42`) |
+| `{id}` | Provider ticket identifier (e.g. `ENG-42` for Linear, `owner/repo#42` for GitHub) |
 | `{title}` | Slugified ticket title (e.g. `add-login-page`) |
 | `{raw_title}` | Original ticket title, sanitized for shell safety (e.g. `Add login page`) |
 | `{branch}` | Generated branch name (`agent/task-{id}`) |
@@ -116,9 +129,18 @@ agent-worker --config ./agent-worker.yaml
 
 The worker runs as a foreground process and handles SIGINT/SIGTERM for graceful shutdown.
 
+## Providers
+
+agent-worker is provider-agnostic — the polling/claim/comment loop is the same regardless of where the tickets live. Currently supported:
+
+- **Linear** (`type: linear`) — uses the [Linear SDK](https://github.com/linear/linear). Authenticates with `LINEAR_API_KEY`.
+- **GitHub Projects v2** (`type: github`) — uses the [GitHub GraphQL API](https://docs.github.com/en/graphql). Authenticates with `GITHUB_TOKEN` (needs `project` scope; also `repo` for private repos). Polls items on a project board, filtered by the value of a single-select status field. Comments are posted on the underlying issue. Pull requests and draft items are skipped.
+
+Adding a new provider means writing one file in `src/providers/`, adding a case to the factory in `src/providers/factory.ts`, and adding a Zod schema branch in `src/config.ts` — see `src/providers/types.ts` for the `TicketProvider` interface.
+
 ## How it works
 
-1. **Poll** — Watch Linear for tickets in the `ready` status on a configurable interval.
+1. **Poll** — Watch the provider for tickets in the `ready` status on a configurable interval.
 2. **Claim** — Transition the ticket to `in_progress` so no other worker picks it up.
 3. **Worktree isolation** — For executors that set `needsWorktree: true` (Claude), the pipeline creates an isolated git worktree for the ticket on a fresh branch (`agent/task-{id}`). This keeps each ticket's work fully isolated from the main repo and from other in-flight tickets.
 4. **Pre-hooks** — Run deterministic setup commands in the worktree directory (optional).

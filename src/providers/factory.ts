@@ -1,6 +1,7 @@
 import type { Config } from "../config.ts";
 import type { ProviderBundle } from "./types.ts";
 import { createLinearProvider } from "./linear.ts";
+import { createGitHubProvider } from "./github.ts";
 
 export function createProvider(
   providerConfig: Config["provider"],
@@ -12,9 +13,17 @@ export function createProvider(
         projectId: providerConfig.linear.project_id,
         readyLabel: lifecycle.ready,
       });
+    case "github":
+      return createGitHubProvider({
+        owner: providerConfig.github.owner,
+        ownerType: providerConfig.github.owner_type,
+        projectNumber: providerConfig.github.project_number,
+        statusFieldName: providerConfig.github.status_field_name,
+        readyLabel: lifecycle.ready,
+      });
     default: {
-      const _exhaustive: never = providerConfig.type;
-      throw new Error(`Unknown provider type: ${_exhaustive}`);
+      const _exhaustive: never = providerConfig;
+      throw new Error(`Unknown provider type: ${(_exhaustive as { type: string }).type}`);
     }
   }
 }

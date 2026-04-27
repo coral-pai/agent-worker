@@ -1,44 +1,62 @@
-# Agent Worker Configuration
-# Copy this file and update with your own values:
+# Agent Worker 설정 파일
+# 이 파일을 복사해서 본인 환경에 맞게 수정하세요:
 #   cp agent-worker.example.yaml agent-worker.yaml
 
 provider:
-  # Which ticket provider to use. Currently supported: "linear"
+  # 사용할 티켓 provider. 지원: "linear", "github"
   type: linear
 
-  # How often to poll the provider for new tickets, in seconds (default: 60)
+  # provider를 폴링하는 주기(초). 기본값: 60
   poll_interval_seconds: 60
 
-  # Provider-specific connection settings
+  # provider별 연결 설정 — 위의 `type`에 해당하는 블록만 채우면 됩니다.
+
+  # --- Linear (type: linear) ---
+  # LINEAR_API_KEY 환경 변수가 필요합니다.
   linear:
-    # Your Linear project UUID (required)
-    # Find it in Linear: Settings > Projects > click project > copy ID from URL
+    # Linear 프로젝트 UUID (필수)
+    # 위치: Linear → Settings → Projects → 프로젝트 클릭 → URL에서 ID 복사
     project_id: "your-project-uuid-here"
 
-# Map provider status names to agent lifecycle stages (required)
-# These must match your provider's status names exactly
-# (for Linear, these are your team's workflow status names)
+  # --- GitHub Projects v2 (type: github) ---
+  # GITHUB_TOKEN 환경 변수가 필요합니다 (`project` scope, private repo면 `repo`도 필요).
+  # github:
+  #   owner: "your-org-or-user"     # 프로젝트를 소유한 조직 또는 사용자 (필수)
+  #   owner_type: organization      # "organization" (기본값) 또는 "user"
+  #   project_number: 1             # 프로젝트 번호. URL 참고: github.com/orgs/<owner>/projects/<N>
+  #   status_field_name: "Status"   # 상태로 사용할 single-select 필드 이름 (기본값: "Status")
+
+# provider의 상태 옵션 이름을 agent의 라이프사이클 단계에 매핑합니다 (필수).
+# 각 값은 provider의 실제 상태 옵션 이름과 정확히 일치해야 합니다 (대소문자/공백 포함).
+#   - Linear: 팀의 워크플로 상태 이름
+#   - GitHub Projects: `status_field_name`으로 지정한 single-select 필드의 옵션 이름
 lifecycle:
-  ready: "Todo"            # Status that marks a ticket as ready for the agent
-  in_progress: "In Progress" # Status set when the agent picks up a ticket
-  done: "Done"             # Status set when the agent completes a ticket
-  failed: "Canceled"       # Status set when the agent fails a ticket
+  ready: "Todo"              # 에이전트가 픽업할 대상으로 표시하는 상태
+  in_progress: "In Progress" # 에이전트가 티켓을 잡았을 때 전환되는 상태
+  done: "Done"               # 에이전트가 작업을 성공적으로 끝냈을 때 전환되는 상태
+  failed: "Canceled"         # 에이전트가 실패했을 때 전환되는 상태
 
 repo:
-  # Absolute path to the git repository the agent works in (required)
+  # 에이전트가 작업할 git 저장소의 절대 경로 (필수)
   path: "/path/to/your/repo"
 
 hooks:
-  # Shell commands to run BEFORE the agent is invoked (optional)
-  # If any command fails, the ticket is marked failed and the agent is not invoked
-  # Supports variables: {id} (ticket ID), {title} (slugified title), {branch} (branch name)
-  # Note: When using the Claude executor, a git worktree is created automatically
-  # so you don't need branch/checkout commands in pre-hooks.
-  # Codex manages its own worktrees, so hooks run in the original repo path.
+  # 에이전트 호출 BEFORE 실행할 셸 명령 (선택)
+  # 한 명령이라도 실패하면 티켓은 failed 처리되고 에이전트는 실행되지 않습니다.
+  # 사용 가능한 변수:
+  #   {id}         — 티켓 식별자 (예: ENG-42, owner/repo#42)
+  #   {title}      — 슬러그 처리된 제목 (예: add-login-page)
+  #   {raw_title}  — 원본 제목 (셸 안전 처리됨)
+  #   {branch}     — 자동 생성된 브랜치 이름 (agent/task-{id})
+  #   {worktree}   — 에이전트가 실행될 워크트리 경로
+  #   {date}       — 현재 시각 (ISO 8601)
+  # 참고: Claude executor는 git 워크트리를 자동 생성하므로 pre-hook에 branch/checkout
+  #       명령을 넣을 필요가 없습니다. Codex는 자체 워크트리를 관리하므로 hook은
+  #       원본 repo 경로에서 실행됩니다.
   pre: []
 
-  # Shell commands to run AFTER the agent completes successfully (optional)
-  # If any command fails, the ticket is marked failed
+  # 에이전트가 성공한 AFTER 실행할 셸 명령 (선택)
+  # 한 명령이라도 실패하면 티켓은 failed 처리됩니다.
   post:
     - "git add -A"
     - "git commit -m '{id}: {raw_title}'"
@@ -46,15 +64,18 @@ hooks:
     - "gh pr create --title '{id}: {raw_title}' --body 'Fixes {id}. Implemented by Agent Worker.' --base main"
 
 executor:
-  # Agent harness to use: "claude" (default) or "codex"
+  # 사용할 에이전트 하네스: "claude" (기본값) 또는 "codex"
   type: claude
 
-  # Maximum time in seconds for the agent to complete (default: 300)
+  # 에이전트가 작업을 끝낼 수 있는 최대 시간(초). 기본값: 300
   timeout_seconds: 300
 
-  # Number of retry attempts on failure, 0-3 (default: 0)
+  # 실패 시 재시도 횟수, 0~3. 기본값: 0
   retries: 0
 
 log:
-  # Path to log file (optional — omit for stdout-only logging)
+  # 로그 파일 경로 (선택 — 생략 시 stdout으로만 출력)
   file: "./agent-worker.log"
+
+  # 로그 레벨: debug | info | warn | error. 기본값: info
+  level: info

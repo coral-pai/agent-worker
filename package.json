@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@linear/sdk": "^77.0.0",
+    "@octokit/graphql": "^9.0.3",
     "yaml": "^2.8.2",
     "zod": "^4.3.6"
   }

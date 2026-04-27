@@ -1,33 +1,10 @@
 import { LinearClient } from "@linear/sdk";
 import type { ProviderBundle } from "./types.ts";
+import { withBackoff, type IsRetryable } from "./_shared/backoff.ts";
 
-const INITIAL_DELAY_MS = 1000;
-const JITTER_MS = 500;
-const MAX_DELAY_MS = 60000;
-const MAX_BACKOFF_RETRIES = 5;
-
-async function withBackoff<T>(
-  fn: () => Promise<T>,
-  maxRetries: number = MAX_BACKOFF_RETRIES
-): Promise<T> {
-  let delay = INITIAL_DELAY_MS;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err: unknown) {
-      const isRateLimit =
-        (err instanceof Error && err.message.toLowerCase().includes("ratelimit")) ||
-        (err instanceof Error && err.message.includes("429"));
-
-      if (!isRateLimit || attempt === maxRetries) throw err;
-
-      const jitter = Math.random() * JITTER_MS;
-      await Bun.sleep(delay + jitter);
-      delay = Math.min(delay * 2, MAX_DELAY_MS);
-    }
-  }
-  throw new Error("Unreachable");
-}
+const isLinearRateLimit: IsRetryable = (err) =>
+  err instanceof Error &&
+  (err.message.toLowerCase().includes("ratelimit") || err.message.includes("429"));
 
 export function createLinearProvider(options: {
   projectId: string;
@@ -55,13 +32,15 @@ export function createLinearProvider(options: {
       name: "Linear",
 
       async fetchReadyTickets() {
-        const issues = await withBackoff(() =>
-          client.issues({
-            filter: {
-              project: { id: { eq: options.projectId } },
-              state: { name: { eq: options.readyLabel } },
-            },
-          })
+        const issues = await withBackoff(
+          () =>
+            client.issues({
+              filter: {
+                project: { id: { eq: options.projectId } },
+                state: { name: { eq: options.readyLabel } },
+              },
+            }),
+          isLinearRateLimit,
         );
 
         return issues.nodes.map((issue) => ({
@@ -73,7 +52,7 @@ export function createLinearProvider(options: {
       },
 
       async transitionStatus(ticketId: string, statusName: string) {
-        const issue = await withBackoff(() => client.issue(ticketId));
+        const issue = await withBackoff(() => client.issue(ticketId), isLinearRateLimit);
         const team = await issue.team;
         if (!team) throw new Error(`No team found for issue ${ticketId}`);
 
@@ -81,12 +60,16 @@ export function createLinearProvider(options: {
         const target = states.find((s) => s.name === statusName);
         if (!target) throw new Error(`Status "${statusName}" not found on team`);
 
-        await withBackoff(() => client.updateIssue(ticketId, { stateId: target.id }));
+        await withBackoff(
+          () => client.updateIssue(ticketId, { stateId: target.id }),
+          isLinearRateLimit,
+        );
       },
 
       async postComment(ticketId: string, body: string) {
-        await withBackoff(() =>
-          client.createComment({ issueId: ticketId, body })
+        await withBackoff(
+          () => client.createComment({ issueId: ticketId, body }),
+          isLinearRateLimit,
         );
       },
     },

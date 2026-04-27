@@ -17,8 +17,20 @@ const LinearProviderSchema = z.object({
   }),
 });
 
+const GitHubProviderSchema = z.object({
+  type: z.literal("github"),
+  poll_interval_seconds: z.number().positive().default(60),
+  github: z.object({
+    owner: z.string(),
+    owner_type: z.enum(["organization", "user"]).default("organization"),
+    project_number: z.number().int().positive(),
+    status_field_name: z.string().default("Status"),
+  }),
+});
+
 const ProviderSchema = z.discriminatedUnion("type", [
   LinearProviderSchema,
+  GitHubProviderSchema,
 ]);
 
 const RepoSchema = z.object({

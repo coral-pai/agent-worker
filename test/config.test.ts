@@ -201,9 +201,9 @@ lifecycle:
   test("rejects unknown provider type", () => {
     const yaml = `
 provider:
-  type: github
-  github:
-    repo: "owner/repo"
+  type: jira
+  jira:
+    base_url: "https://example.atlassian.net"
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
