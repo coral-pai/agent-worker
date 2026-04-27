@@ -152,10 +152,10 @@ When multiple agents run in parallel, the PRs they produce can conflict with eac
 
 **Usage:**
 
-On a PR with conflicts, post a comment containing `@agent-worker resolve`. Optionally append guidance — for example:
+On a PR with conflicts, post a comment containing `/agent-worker resolve`. Optionally append guidance — for example:
 
 ```
-@agent-worker resolve — main 쪽의 시그니처 변경을 우선하고, 내 변경은 그쪽에 맞춰 리네임해줘
+/agent-worker resolve — main 쪽의 시그니처 변경을 우선하고, 내 변경은 그쪽에 맞춰 리네임해줘
 ```
 
 The action checks out the PR branch, attempts to merge with the base branch, resolves conflicts (using the comment as guidance), pushes a resolution commit, and replies with a summary. **Merging the PR is still the human reviewer's job** — the action only resolves conflicts, it does not merge.

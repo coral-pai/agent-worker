@@ -6,7 +6,7 @@
 #   3. (선택) Settings → Secrets → Actions 에 `CLAUDE_CODE_OAUTH_TOKEN` 으로 대체 가능
 #
 # 동작:
-#   PR 코멘트에 "@agent-worker resolve" 가 포함되면 트리거됩니다. 작성자가 write 권한
+#   PR 코멘트에 "/agent-worker resolve" 가 포함되면 트리거됩니다. 작성자가 write 권한
 #   이상 (OWNER / COLLABORATOR / MEMBER) 일 때만 실제로 실행되며, 그 외 권한은 action
 #   내부에서 자동으로 차단됩니다.
 #
@@ -14,9 +14,9 @@
 #   에 push 합니다. 머지 자체는 (의도적으로) 사람이 직접 수행합니다.
 #
 # 트리거 예시:
-#   "@agent-worker resolve"
-#   "@agent-worker resolve — main 쪽 변경을 우선해줘"
-#   "@agent-worker resolve: keep both implementations and combine them"
+#   "/agent-worker resolve"
+#   "/agent-worker resolve — main 쪽 변경을 우선해줘"
+#   "/agent-worker resolve: keep both implementations and combine them"
 
 name: Agent Worker — Resolve PR Conflicts
 
@@ -29,7 +29,7 @@ jobs:
     # PR 코멘트에 한해서만 (issue 코멘트 제외) 트리거 어구가 있을 때 실행
     if: |
       github.event.issue.pull_request != null &&
-      contains(github.event.comment.body, '@agent-worker resolve')
+      contains(github.event.comment.body, '/agent-worker resolve')
     runs-on: ubuntu-latest
     permissions:
       contents: write       # resolution commit push
@@ -66,7 +66,7 @@ jobs:
           # (B) Anthropic API key 사용자 (위 줄을 지우고 아래 줄 사용)
           # anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
-          trigger_phrase: "@agent-worker resolve"
+          trigger_phrase: "/agent-worker resolve"
 
           # Claude Code 의 도구 허용 목록 — git/gh 명령과 파일 수정을 위해 필수.
           # 이 줄이 없으면 Claude 가 도구 호출 시 권한 거부되어 아무 작업도 못 합니다.
