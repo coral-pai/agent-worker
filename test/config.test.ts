@@ -29,7 +29,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 repo:
   path: "/tmp/repo"
@@ -63,7 +63,7 @@ provider:
 lifecycle:
   ready: "Ready"
   in_progress: "Working"
-  done: "Complete"
+  in_review: "Reviewing"
   failed: "Failed"
 repo:
   path: "/home/user/project"
@@ -102,7 +102,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 repo:
   path: "/tmp/repo"
@@ -124,7 +124,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 repo:
   path: "/tmp/repo"
@@ -139,6 +139,8 @@ claude:
   });
 
   test("throws helpful error when legacy `linear:` top-level key is used", () => {
+    // Intentionally uses the OLD shape (top-level `linear:` with `statuses.done`)
+    // to verify the legacy migration error fires before zod validation.
     const yaml = `
 linear:
   project_id: "proj-123"
@@ -163,7 +165,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 repo:
   path: "/tmp/repo"
@@ -192,7 +194,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 `;
     expect(() => loadConfig(writeConfig(yaml))).toThrow();
@@ -207,7 +209,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 repo:
   path: "/tmp/repo"
@@ -224,7 +226,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 repo:
   path: "/tmp/repo"
@@ -244,7 +246,7 @@ provider:
 lifecycle:
   ready: "Todo"
   in_progress: "In Progress"
-  done: "Done"
+  in_review: "In Review"
   failed: "Canceled"
 repo:
   path: "/tmp/repo"

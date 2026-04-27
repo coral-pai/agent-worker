@@ -33,7 +33,9 @@ provider:
 lifecycle:
   ready: "Todo"              # 에이전트가 픽업할 대상으로 표시하는 상태
   in_progress: "In Progress" # 에이전트가 티켓을 잡았을 때 전환되는 상태
-  done: "Done"               # 에이전트가 작업을 성공적으로 끝냈을 때 전환되는 상태
+  in_review: "In Review"     # 에이전트 작업 + post-hook 성공 후 전환되는 상태
+                             # PR 머지 등으로 "완료(Done)" 처리하는 건 외부 자동화의 책임입니다
+                             # (예: GitHub Project workflow의 "Pull request merged → Done")
   failed: "Canceled"         # 에이전트가 실패했을 때 전환되는 상태
 
 repo:

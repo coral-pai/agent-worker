@@ -74,7 +74,7 @@ export async function processTicket(options: {
   // Update final status
   try {
     if (lastResult?.success) {
-      await provider.transitionStatus(ticket.id, config.lifecycle.done);
+      await provider.transitionStatus(ticket.id, config.lifecycle.in_review);
 
       const output = lastNLines(lastResult.output ?? "", 50);
       const comment = [

@@ -85,7 +85,10 @@ provider:
 lifecycle:
   ready: "Todo"                       # Status that marks a ticket ready for pickup
   in_progress: "In Progress"          # Status set when the agent claims a ticket
-  done: "Done"                        # Status set on success
+  in_review: "In Review"              # Status set on pipeline success.
+                                      # Moving from "in_review" to a final "done" state is
+                                      # the responsibility of external automation (e.g. a
+                                      # GitHub Project workflow on PR merge).
   failed: "Canceled"                  # Status set on failure
 
 repo:

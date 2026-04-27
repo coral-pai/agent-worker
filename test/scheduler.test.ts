@@ -29,7 +29,7 @@ function makeConfig(overrides?: Partial<Config>): Config {
     lifecycle: {
       ready: "Todo",
       in_progress: "In Progress",
-      done: "Done",
+      in_review: "In Review",
       failed: "Canceled",
     },
     repo: { path: "/tmp" },
@@ -110,12 +110,13 @@ describe("processTicket", () => {
 
     expect(transitions).toContain("In Progress");
     expect(transitions).toContain("Canceled");
+    expect(transitions).not.toContain("In Review");
     expect(comments.length).toBe(1);
     expect(comments[0]).toContain("Agent Worker Failure");
     expect(comments[0]).toContain("pre-hook");
   });
 
-  test("transitions to done and posts comment on success", async () => {
+  test("transitions to in_review and posts comment on success", async () => {
     const { provider, transitions, comments } = makeProvider();
 
     await processTicket({
@@ -127,7 +128,7 @@ describe("processTicket", () => {
     });
 
     expect(transitions).toContain("In Progress");
-    expect(transitions).toContain("Done");
+    expect(transitions).toContain("In Review");
     expect(transitions).not.toContain("Canceled");
     expect(comments.length).toBe(1);
     expect(comments[0]).toContain("Agent Worker Completed");
@@ -183,7 +184,7 @@ describe("processTicket", () => {
     });
 
     expect(callCount).toBe(2);
-    expect(transitions).toContain("Done");
+    expect(transitions).toContain("In Review");
     expect(transitions).not.toContain("Canceled");
   });
 
@@ -211,7 +212,7 @@ describe("processTicket", () => {
     // retries: 2 means 3 total attempts (attempt 0, 1, 2)
     expect(callCount).toBe(3);
     expect(transitions).toContain("Canceled");
-    expect(transitions).not.toContain("Done");
+    expect(transitions).not.toContain("In Review");
     expect(comments.length).toBe(1);
     expect(comments[0]).toContain("Agent Worker Failure");
   });

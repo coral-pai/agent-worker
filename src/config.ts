@@ -5,7 +5,7 @@ import { z } from "zod/v4";
 const LifecycleSchema = z.object({
   ready: z.string(),
   in_progress: z.string(),
-  done: z.string(),
+  in_review: z.string(),
   failed: z.string(),
 });
 
