@@ -1,6 +1,6 @@
 {
   "name": "agent-worker",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A CLI tool that polls Linear for tickets and dispatches them to Claude Code for autonomous implementation.",
   "module": "src/index.ts",
   "type": "module",
